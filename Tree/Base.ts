@@ -9,7 +9,7 @@ function repeatString(str:string,num:number):string{
   if(num===0){
     return str;
   }else{
-    return str+=repeatString(str,num-1);
+    return str += repeatString(str,num-1);
   }
 }
 
@@ -33,7 +33,7 @@ export class TNode<T> implements INode<T> {
     node.value && cb(node.value);
     node.right && this.inorderTraversal(node.right, cb);
   }
-  static levelTraversal<T>(node: INode<T>, cb: (item: (T|null)[],level:number,reverseLevel:number) => void = (item,level,reverseLevel) => console.log(level,item,reverseLevel)) {
+  static levelTraversal<T>(node: INode<T>, cb: (item: (T|null)[],level:number) => void = (item,level) => console.log(level,item)) {
     let nodeList: (INode<T>|null)[] = [];
     nodeList.push(node);
     for (let i = 0; i < node.deep; i++) {
@@ -43,14 +43,15 @@ export class TNode<T> implements INode<T> {
         nodeList.push(left||null);
         nodeList.push(right||null);
       }
-      cb(nodeList.splice(0, 2**i).map(item=>item&&item.value||null),i + 1,node.deep - i);
+      cb(nodeList.splice(0, 2**i).map(item=>item&&item.value||null),i + 1);
     }
   }
 
   static print<T>(node: INode<T>) {
-    this.levelTraversal(node,(item,level,blankNum)=>{
-      const str = repeatString(' ',blankNum)+item.join(' ');
-      console.log(str);
+    //TODO 打印树形结构
+    const lastLevel = 2**(node.deep-1) + 1;
+    this.levelTraversal(node,(item,level)=>{
+      console.log(repeatString(' ',Math.ceil(lastLevel/2**level))+item.join(repeatString(' ',Math.ceil(lastLevel/2**level))));
     })
   }
   get deep(): number {
