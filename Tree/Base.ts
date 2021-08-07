@@ -37,7 +37,6 @@ export class TNode<T> implements INode<T> {
     let nodeList: (INode<T>|null)[] = [];
     nodeList.push(node);
     for (let i = 0; i < node.deep; i++) {
-      const len = nodeList.length;
       for (let j = 0; j < 2 ** i; j++) {
         const left = nodeList[j]?.left;
         const right = nodeList[j]?.right;
