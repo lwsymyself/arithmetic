@@ -2,13 +2,31 @@ import { TNode } from "./Base";
 
 interface FindNode {
   index: number;
+  [str: string]: any;
 }
 //支持数字以及带有索引的类型
-export type AcceptType = FindNode | number;
+export type AcceptType = (FindNode | number)
 function isNumber(num: AcceptType) {
   return typeof num === 'number'
 }
-//
+//TODO 重构整个树，将静态方法改为原型方法 
+// const parseInnerData = (d: AcceptType): FindNode => {
+//   if (typeof d === 'number') {
+//     return {
+//       'index': d
+//     }
+//   } else {
+//     return d;
+//   }
+// }
+// const parseOriginData = (d: FindNode): AcceptType => {
+//   const keys = Object.keys(d);
+//   if (keys.length === 1) {
+//     return d[keys[0]]
+//   } else {
+//     return d;
+//   }
+// }
 export const eor = <T>(A: T, B: T) => {
   if (!!A && !B) {
     return A;
@@ -23,7 +41,7 @@ type hook = (tree: FindTree, element: AcceptType) => {
   action: 'return'
 } | void
 
-type afterType = 'insert' | 'delete'
+type afterType = 'insert' | 'delete' | 'find'
 let returnNode: FindTree | undefined = undefined;
 function handleAfterHook(hook: afterType, data: {
   element: AcceptType, tree: FindTree
@@ -41,17 +59,19 @@ const beforeHook: {
   [key in afterType]: hook
 } = {
   'insert': () => void 0,
-  'delete': () => void 0
+  'delete': () => void 0,
+  'find': () => void 0
 }
 const afterHook: {
   [key in afterType]: hook
 } = {
   'insert': () => void 0,
-  'delete': () => void 0
+  'delete': () => void 0,
+  'find': () => void 0
 }
 // let beforeInsert: hook = () => void 0;
 // let afterInsert: hook = () => void 0;
-const insert: (element: AcceptType, tree: FindTree) => FindTree = (element: AcceptType, tree: FindTree) => {
+const insert = (element: AcceptType, tree: FindTree): FindTree => {
   if (tree === null) {
     return new FindTree(null, null, element);
   }
@@ -141,6 +161,37 @@ const del = (element: AcceptType, tree: FindTree): FindTree | null => {
 }
 // 递归定义，左边节点一定小于右边节点。
 export class FindTree extends TNode<AcceptType>{
+  //为了让节点支持单纯的number，所以必须写成静态方法。
+  //返回插入的节点元素
+  static insert(element: AcceptType, tree: FindTree): FindTree {
+    returnNode = undefined;
+    insert(element, tree);
+    return returnNode || tree;
+  }
+  static delete(element: AcceptType, tree: FindTree): FindTree {
+    returnNode = undefined;
+    del(element, tree);
+    return returnNode || tree;
+  }
+  static findMin(tree: FindTree): FindTree {
+    if (tree.left) {
+      return this.findMin(tree.left);
+    }
+    return tree;
+  }
+  static getIndex(element: AcceptType): number {
+    return typeof element === 'number' ? element : element.index
+  }
+  static getElement(tree: FindTree, element: AcceptType) {
+    if (tree.left) {
+      if (this.getIndex(tree.value) === this.getIndex(element)) {
+
+      }
+      if (this.getIndex(tree.left.value) < this.getIndex(element)) {
+
+      }
+    }
+  }
 
   static set beforeInsert(v: hook) {
     beforeHook['insert'] = v;
@@ -164,34 +215,20 @@ export class FindTree extends TNode<AcceptType>{
   static set afterDelete(v: hook) {
     afterHook['delete'] = v;
   }
-
-  //返回插入的节点元素
-  static insert(element: AcceptType, tree: FindTree): FindTree {
-    returnNode = undefined;
-    insert(element, tree);
-    return returnNode || tree;
+  static get afterFind() {
+    return afterHook['find'];
   }
-  static delete(element: AcceptType, tree: FindTree): FindTree {
-    returnNode = undefined;
-    del(element, tree);
-    return returnNode || tree;
-  }
-  static findMin(tree: FindTree): FindTree {
-    if (tree.left) {
-      return this.findMin(tree.left);
-    }
-    return tree;
-  }
-  static getIndex(element: AcceptType): number {
-    return typeof element === 'number' ? element : element.index
+  static set afterFind(v: hook) {
+    afterHook['find'] = v;
   }
 }
-// let findTree = new FindTree(null, null, 3);
-// FindTree.insert(10, findTree);
-// FindTree.insert(4, findTree);
-// FindTree.insert(2, findTree);
-// FindTree.insert(15, findTree);
-// FindTree.insert(7, findTree);
+let findTree = new FindTree(null, null, 3);
+FindTree.insert(10, findTree);
+FindTree.insert(4, findTree);
+FindTree.insert(2, findTree);
+FindTree.insert(15, findTree);
+FindTree.insert(7, findTree);
+// findTree.print();
 // FindTree.delete(3, findTree);
 // FindTree.print(findTree);
 // console.log();
