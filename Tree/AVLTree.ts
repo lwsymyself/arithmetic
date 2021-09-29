@@ -1,4 +1,5 @@
-import { FindTree } from "./FindTree";
+import { TNode } from "./Base";
+import { AcceptType, FindTree } from "./FindTree";
 //由于插入可能会破坏二叉树的结构。所以，平衡二叉树(AVLTree)在插入和删除的时候，都会顺便
 class AVLTree extends FindTree {
   //左旋：为了解决插入之后，高度差大于1的问题。
@@ -73,6 +74,7 @@ class AVLTree extends FindTree {
       AVLTree.signleRotateWithLeft(tree.right);
       const root = AVLTree.signleRotateWithRight(tree);
       if (root) {
+        //由于parent是自动赋值的，所以当需要更改根节点时，需要将新的根节点的父节点置空。
         root.parent = null;
         return root;
       }
@@ -88,10 +90,12 @@ class AVLTree extends FindTree {
   //第二步变换，以C为中心，进行左旋。
   //  C
   //B   A 
+  //原因：根据二叉查找树的定义，B<C<A，要想让树恢复平衡，则必须让C作为根节点。然而，一次旋转，只能让相邻的子节点向变为父节点。所以，需要两次旋转，才能让C变到C的父节点的父节点。
   static doubleRotateWithRight(tree: AVLTree) {
     if (tree.left) {
       AVLTree.signleRotateWithRight(tree.left);
       const root = AVLTree.signleRotateWithLeft(tree);
+      //由于parent是自动赋值的，所以当需要更改根节点时，需要将新的根节点的父节点置空。
       if (root) {
         root.parent = null;
         return root;
@@ -100,59 +104,80 @@ class AVLTree extends FindTree {
   }
 }
 //在FindTree插入后，调用该函数。
-FindTree.afterInsert = (element, tree) => {
+FindTree.afterInsert = (tree, element) => {
   const leftHeight = tree.left?.deep || 0;
   const rightHeight = tree.right?.deep || 0;
+  let root: TNode<AcceptType> | undefined;
   if ((leftHeight - rightHeight) > 1 && tree.left) {
     const elementIndex = FindTree.getIndex(element);
     const treeIndex = FindTree.getIndex(tree.left.value);
     if (elementIndex < treeIndex) {
-      const root = AVLTree.signleRotateWithLeft(tree);
-      if (root) {
-        return {
-          data: root,
-          action: 'return'
-        }
-      }
+      root = AVLTree.signleRotateWithLeft(tree);
     } else {
-      const root = AVLTree.doubleRotateWithRight(tree);
-      if (root) {
-        return {
-          action: 'return',
-          data: root
-        }
-      }
+      root = AVLTree.doubleRotateWithRight(tree);
     }
-  }
-  if ((rightHeight - leftHeight) > 1 && tree.right) {
+  } else if ((rightHeight - leftHeight) > 1 && tree.right) {
     const elementIndex = FindTree.getIndex(element);
     const treeIndex = FindTree.getIndex(tree.right.value);
+    //如果插入值大于树右孩子的值，代表肯定插到右孩子的右孩子上了。
+    //符合一条线，右旋。
     if (elementIndex > treeIndex) {
-      const root = AVLTree.signleRotateWithRight(tree);
-      if (root) {
-        return {
-          data: root,
-          action: 'return'
-        }
-      }
+      root = AVLTree.signleRotateWithRight(tree);
     } else {
-      const root = AVLTree.doubleRotateWithLeft(tree);
-      if (root) {
-        return {
-          action: 'return',
-          data: root
-        }
-      }
+      root = AVLTree.doubleRotateWithLeft(tree);
+    }
+  }
+  if (root) {
+    root.parent = null;
+    return {
+      data: root,
+      action: 'return'
     }
   }
 }
-let tree = new AVLTree(null, null, 6);
-tree = AVLTree.insert(8, tree);
-tree = AVLTree.insert(7, tree);
-tree = AVLTree.insert(9, tree);
-tree = AVLTree.insert(12, tree);
+FindTree.afterDelete = (tree, element) => {
+  const leftHeight = tree.left?.deep || 0;
+  const rightHeight = tree.right?.deep || 0;
+  //如果更改了树根，需要返回树根，让delete处理。
+  let root: TNode<AcceptType> | undefined;
+  if (leftHeight - rightHeight > 1 && tree.left) {
+    //满足ll，可以单旋
+    if (tree.left.left) {
+      root = AVLTree.signleRotateWithLeft(tree);
+    } else {
+      //没有ll，只能双旋
+      root = AVLTree.doubleRotateWithLeft(tree);
+    }
+  }
+  if (rightHeight - leftHeight > 1 && tree.right) {
+    if (tree.right.right) {
+      root = AVLTree.signleRotateWithRight(tree);
+    } else {
+      root = AVLTree.doubleRotateWithLeft(tree);
+    }
+  }
+  if (root) {
+    root.parent = null;
+    return {
+      'action': 'return',
+      'data': root
+    };
+  }
+}
+let tree: AVLTree = new AVLTree(null, null, 5);
 tree = AVLTree.insert(4, tree);
+tree = AVLTree.insert(7, tree);
+tree = AVLTree.insert(6, tree);
 tree = AVLTree.insert(3, tree);
-tree = AVLTree.insert(11, tree);
+tree = AVLTree.insert(10, tree);
+tree = AVLTree.insert(2, tree);
+tree = AVLTree.delete(10, tree);
+tree = AVLTree.delete(4, tree);
 AVLTree.levelTraversal(tree);
+//节点没有孩子时，两边都没有
+// tree = AVLTree.insert(12, tree);
+// tree = AVLTree.insert(4, tree);
+// tree = AVLTree.insert(3, tree);
+// tree = AVLTree.insert(11, tree);
+// AVLTree.levelTraversal(tree);
 // console.log(tree);
