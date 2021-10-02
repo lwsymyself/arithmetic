@@ -25,9 +25,10 @@ type hook = (tree: FindTree, element: FindTree) => {
 
 type afterType = 'insert' | 'delete' | 'find'
 let returnNode: FindTree | undefined = undefined;
-function handleAfterHook(hook: afterType, data: {
+
+function handleAfterHook<T = FindTree>(hook: afterType, data: {
   element: FindTree, tree: FindTree
-}, node: FindTree) {
+}, _returnNode: T) {
   const obj = afterHook[hook](data.tree, data.element);
   if (obj) {
     switch (obj.action) {
@@ -35,7 +36,7 @@ function handleAfterHook(hook: afterType, data: {
         returnNode = obj.data;
     }
   }
-  return node;
+  return _returnNode;
 }
 const beforeHook: {
   [key in afterType]: hook
@@ -51,8 +52,6 @@ const afterHook: {
   'delete': () => void 0,
   'find': () => void 0
 }
-// let beforeInsert: hook = () => void 0;
-// let afterInsert: hook = () => void 0;
 const parseElement = (element: FindTree) => {
   if (typeof element.value === 'number') {
     return element.value;
@@ -69,38 +68,30 @@ const insert = (element: FindTree, tree: FindTree): FindTree => {
     return new FindTree(null, null, parseElement(element));
   }
   FindTree.beforeInsert(tree, element);
+  let node: FindTree;
   if (tree.index < element.index) {
     //如果右部存在，则意味需要判断插入数据和右部数据的索引大小，于是递归调用insert函数。
     if (tree.right) {
-      const node = insert(element, tree.right);
-      return handleAfterHook('insert', {
-        element, tree
-      }, node);
+      node = insert(element, tree.right);
     }
     else {
-      const node = tree.right = new FindTree(null, null, parseElement(element));
-      return handleAfterHook('insert', {
-        element, tree
-      }, node);
+      node = tree.right = new FindTree(null, null, parseElement(element));
     }
-  }
-  if (tree.index > element.index) {
+  } else if (tree.index > element.index) {
     //同理
     if (tree.left) {
-      const node = insert(element, tree.left);
-      return handleAfterHook('insert', {
-        element, tree
-      }, node);
+      node = insert(element, tree.left);
     }
     else {
-      const node = tree.left = new FindTree(null, null, parseElement(element));
-      return handleAfterHook('insert', {
-        element, tree
-      }, node);
+      node = tree.left = new FindTree(null, null, parseElement(element));
     }
+  } else {
+    //如果相等，则不插入该节点，直接返回子树。当然，也可以用链表保存索引相同的节点数据。
+    node = tree;
   }
-  //如果相等，则不插入该节点，直接返回子树。当然，也可以用链表保存索引相同的节点数据。
-  return tree;
+  return handleAfterHook('insert', {
+    element, tree
+  }, node);
 }
 const del = (element: FindTree, tree: FindTree): FindTree | null => {
   if (tree === null) {
@@ -148,6 +139,25 @@ const del = (element: FindTree, tree: FindTree): FindTree | null => {
   }
   return handleAfterHook('delete', { tree, element }, tree);
 }
+const find = (element: FindTree, tree: FindTree | null): FindTree | null => {
+  if (!tree) {
+    return null;
+  }
+  let returnNode: FindTree | null = null;
+  if (tree.index === element.index) {
+    returnNode = tree;
+  }
+  if (tree.index < element.index) {
+    returnNode = find(element, tree.right);
+  }
+  if (tree.index > element.index) {
+    returnNode = find(element, tree.left);
+  }
+  return handleAfterHook('find', {
+    element,
+    tree
+  }, returnNode)
+}
 // 递归定义，左边节点一定小于右边节点。
 export class FindTree extends TNode<AcceptType, FindTree>{
   //因为左右节点已经固定，所以必须写成静态方法。
@@ -183,31 +193,9 @@ export class FindTree extends TNode<AcceptType, FindTree>{
     if (!this) {
       return null;
     }
-    const wrapperElement = createElement(element);
-    if (this.index === wrapperElement.index) {
-      return this;
-    }
-    if (this.left) {
-      if (this.left.index === wrapperElement.index) {
-        return this.left;
-      }
-      if (this.left.index < wrapperElement.index) {
-        return this.left.right?.find(wrapperElement) || null;
-      } else {
-        return this.left.left || null;
-      }
-    }
-    if (this.right) {
-      if (this.right.index === wrapperElement.index) {
-        return this.right;
-      }
-      if (this.right.index < wrapperElement.index) {
-        return this.right.left?.find(wrapperElement) || null;
-      } else {
-        return this.right.right?.find(wrapperElement) || null;
-      }
-    }
-    return null;
+    returnNode = undefined;
+    const resolve = find(createElement(element), this);
+    return resolve;
   }
 
   static set beforeInsert(v: hook) {
