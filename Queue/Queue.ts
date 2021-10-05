@@ -1,17 +1,19 @@
-export class Stack<T> {
-  private _self: T[] = [];
+export class Queue<T>{
+  private items: T[] = [];
   get item() {
-    return this._self[this._self.length - 1];
+    return this.items[0]
   }
   set item(v) {
-    this._self.push(v);
+    this.items.push(v);
   }
   drop() {
-    return this._self.pop();
+    return this.items.shift();
   }
   [Symbol.iterator]() {
+    let index = 0;
     return {
       next: () => {
+        index++;
         let data = this.drop();
         return {
           value: data,
