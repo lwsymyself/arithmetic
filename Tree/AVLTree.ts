@@ -2,7 +2,7 @@ import { TNode } from "./Base";
 import { AcceptType, FindTree } from "./FindTree";
 import { RotateTree } from "./RotateTree";
 //由于插入可能会破坏二叉树的结构。所以，平衡二叉树(AVLTree)在插入和删除的时候，都会顺便
-class AVLTree extends RotateTree {
+export class AVLTree extends RotateTree {
 
 }
 //在FindTree插入后，调用该函数。

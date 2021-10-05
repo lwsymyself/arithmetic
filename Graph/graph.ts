@@ -2,7 +2,7 @@ import { List } from "../ListNode/ListNode";
 import { Queue } from "../Queue/Queue";
 import { Stack } from "../Queue/Stack";
 type ItemType<T> = { id: number, data: T, relation: List<{ cost?: number, id: number }> }
-class Graph<T> {
+export class Graph<T> {
   private _data: ItemType<T>[] = [];
   addPoint(data: T, relation?: {
     id: number,
