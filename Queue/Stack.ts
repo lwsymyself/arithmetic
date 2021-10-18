@@ -9,6 +9,9 @@ export class Stack<T> {
   drop() {
     return this._self.pop();
   }
+  isEmpty() {
+    return this._self.length === 0
+  }
   [Symbol.iterator]() {
     return {
       next: () => {
