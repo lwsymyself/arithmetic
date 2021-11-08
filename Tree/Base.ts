@@ -61,6 +61,34 @@ export class TNode<T, K extends TNode<T, K>> {
       cb(nodeList.splice(0, 2 ** i).map(item => item && item.value || null), i + 1);
     }
   }
+  static levelTraversal2<T, K extends TNode<T, K>>(node: TNode<T, K>, cb: (item: (T | null)[], level: number) => void = (item, level) => console.log(level, item)) {
+    let nodeList: (TNode<T, K> | null)[] = [];
+    nodeList.push(node);
+
+    let level = 1;
+    while (nodeList[0]) {
+      let len = nodeList.length;
+      let res: T[] = [];
+      for (let i = 0; i < len; i++) {
+        let item = nodeList.shift();
+        item.left && nodeList.push(item.left);
+        item.right && nodeList.push(item.right);
+        res.push(item.value);
+      }
+      cb(res, level);
+    }
+  }
+  static levelTraversal3<T, K extends TNode<T, K>>(node: TNode<T, K>, cb: (item: T) => void = (item) => console.log(item)) {
+    let nodeList: (TNode<T, K> | null)[] = [];
+    nodeList.push(node);
+    for (let i = 0; i < nodeList.length; i++) {
+      if (nodeList[i].left)
+        nodeList.push(nodeList[i].left)
+      if (nodeList[i].right)
+        nodeList.push(nodeList[i].right)
+      cb(nodeList[i].value);
+    }
+  }
 
   static print<T, K extends TNode<T, K>>(node: TNode<T, K>) {
     //TODO 打印树形结构
